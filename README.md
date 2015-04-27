@@ -1,4 +1,4 @@
-#### Purpose-written research code
+#### Purpose-built research code
 Please feel free to contact me if you have any suggestions or questions at umbralcalc@gmail.com. To find out more about my research, please visit the link [here](https://sites.google.com/site/umbralcalc/home). The code here is all authored by myself and is therefore not especially _flashy_, however it all should perform relatively bug-free. You can find in this repository:
 
 1. _Shortcut_Bayes.cpp_: This takes as input the Markov-Chain Monte-Carlo posterior samples which you can find [here](http://pla.esac.esa.int/pla/) obtained using CosmoMC (a Fortran Metropolis-Hastings algorithm used prolifically in Cosmology, see [here](http://cosmologist.info/cosmomc)) by the _Planck Collaboration_ and outputs approximate Bayesian evidence ratios and maximum likelihood estimates assuming priors from a class of multi-field slow-roll cosmic inflation models.
