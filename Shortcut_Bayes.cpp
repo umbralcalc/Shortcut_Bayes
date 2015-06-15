@@ -1,3 +1,6 @@
+// Below is an extremely simple sampling algorithm written by R.J.Hardwick 
+// discussed in the main body of work. It can run on most machines 
+// current specification tested in 4.00 GB RAM Intel Core(TM) i5 CPU 
 
 #include <iostream>
 #include <cmath>
@@ -8,6 +11,8 @@
 #include <sstream>
 #include <iomanip>
 #include <vector>
+
+// functions below for {As,ns,r,fnl} space in the case of all models
 
 double lamCDM_ns(){
 	return ((double)rand()/(double)RAND_MAX)*0.12 + 0.9;
@@ -217,6 +222,9 @@ double vary_dist_fnl_2(double fnl,double sdmult){
 	return exp(-(0.32*pow(sdmult,2.00))*pow((fnl+1.25),2.00));
 };
 
+
+// sampling random number generators across prior ranges
+
 double mCM2_Gammasigmasampler(double m){
 	double a=m;
 	return ((double)rand()/(double)RAND_MAX)*(-39.00-a) + a;
@@ -303,11 +311,13 @@ double dCM2_sigmastarsampler(){
 	return log10(((double)rand()/(double)RAND_MAX)*0.01);
 };
 
+// the main algorithm
+
 int main()
 {
 	static const int gridsize=100;
 	static const int pres=20;
-    static const int smoothing_order=3; 
+    static const int smoothing_order=3; // the number of nearest neighbour bins to average the planck data
 	double*** r_ns_As_count;
 	int maxsam=1000000;  
 	double sdmult=3.5;
@@ -327,6 +337,7 @@ int main()
 	double dCM2_fnlmaxlik=0.00;
 	double lamCDM_fnlmaxlik=0.00;
 	double sample_fnlmaxlik=0.00;
+	static const double h=0.8;
 	static const double reducedmaxAs=3.4;
 	static const double reducedminAs=2.8;
 	static const double maxAs=6.91;
@@ -350,7 +361,11 @@ int main()
 	int date;
 	srand(time(NULL));  
 
+	// dynamic 3D memory allocation for quadratic {ns,r,As} space
+
 	std::cout << "Initialising...";    
+	
+	// initialise 2D vectors to 0
 
 	r_ns_As_count=new double**[gridsize];
 	for(int r = 0; r < gridsize; ++r) {
@@ -364,6 +379,9 @@ int main()
 	}
 
 	std::cout << "done" << "\n";
+
+	// finding Maximum Likelihood Estimate (Evidence) and outputting to data file
+	
 	
 	std::cout << "Which data? Please enter 2015, 2013 or 0 (BKP): ";
 	std::cin >> date;
@@ -441,6 +459,9 @@ int main()
 	std::cout << "\n";
 	
 	std::cout << "done" << "\n";	
+
+	// creating temporary files below and sorting into bins allocated 
+	// according to the grid size 
 
 	std::cout << "Sampling and binning model parameters..."; 
 	
@@ -538,9 +559,6 @@ int main()
 			int a_upper=0;
 			int b_upper=0;
 			int c_upper=0;
-			double ha=1.0+exp(std::abs(bestfit_ns-static_cast<double>(a)));
-			double hb=1.0+exp(static_cast<double>(b));
-			double hc=1.0+exp(std::abs(bestfit_As-static_cast<double>(c)));
 			if(a<smoothing_order){a_lower=smoothing_order-a;}
 			if(b<smoothing_order){b_lower=smoothing_order-b;}
 			if(c<smoothing_order){c_lower=smoothing_order-c;}
@@ -552,8 +570,8 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb))*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb));
+						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
 					}
 				}
 			}
@@ -587,9 +605,6 @@ int main()
 			int a_upper=0;
 			int b_upper=0;
 			int c_upper=0;
-			double ha=1.0+exp(std::abs(bestfit_ns-static_cast<double>(a)));
-			double hb=1.0+exp(static_cast<double>(b));
-			double hc=1.0+exp(std::abs(bestfit_As-static_cast<double>(c)));
 			if(a<smoothing_order){a_lower=smoothing_order-a;}
 			if(b<smoothing_order){b_lower=smoothing_order-b;}
 			if(c<smoothing_order){c_lower=smoothing_order-c;}
@@ -601,8 +616,8 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb))*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb));
+						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
 					}
 				}
 			}
@@ -636,9 +651,6 @@ int main()
 			int a_upper=0;
 			int b_upper=0;
 			int c_upper=0;
-			double ha=1.0+exp(std::abs(bestfit_ns-static_cast<double>(a)));
-			double hb=1.0+exp(static_cast<double>(b));
-			double hc=1.0+exp(std::abs(bestfit_As-static_cast<double>(c)));
 			if(a<smoothing_order){a_lower=smoothing_order-a;}
 			if(b<smoothing_order){b_lower=smoothing_order-b;}
 			if(c<smoothing_order){c_lower=smoothing_order-c;}
@@ -650,8 +662,8 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb))*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb));
+						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
 					}
 				}
 			}
@@ -685,9 +697,6 @@ int main()
 			int a_upper=0;
 			int b_upper=0;
 			int c_upper=0;
-			double ha=1.0+exp(std::abs(bestfit_ns-static_cast<double>(a)));
-			double hb=1.0+exp(static_cast<double>(b));
-			double hc=1.0+exp(std::abs(bestfit_As-static_cast<double>(c)));
 			if(a<smoothing_order){a_lower=smoothing_order-a;}
 			if(b<smoothing_order){b_lower=smoothing_order-b;}
 			if(c<smoothing_order){c_lower=smoothing_order-c;}
@@ -699,8 +708,8 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb))*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb));
+						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
 					}
 				}
 			}
@@ -725,9 +734,6 @@ int main()
 			int a_upper=0;
 			int b_upper=0;
 			int c_upper=0;
-			double ha=1.0+exp(std::abs(bestfit_ns-static_cast<double>(a)));
-			double hb=1.0+exp(static_cast<double>(b));
-			double hc=1.0+exp(std::abs(bestfit_As-static_cast<double>(c)));
 			if(a<smoothing_order){a_lower=smoothing_order-a;}
 			if(b<smoothing_order){b_lower=smoothing_order-b;}
 			if(c<smoothing_order){c_lower=smoothing_order-c;}
@@ -739,8 +745,8 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb))*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb));
+						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
 					}
 				}
 			}
@@ -759,9 +765,6 @@ int main()
 			int a_upper=0;
 			int b_upper=0;
 			int c_upper=0;
-			double ha=1.0+exp(std::abs(bestfit_ns-static_cast<double>(a)));
-			double hb=1.0+exp(static_cast<double>(b));
-			double hc=1.0+exp(std::abs(bestfit_As-static_cast<double>(c)));
 			if(a<smoothing_order){a_lower=smoothing_order-a;}
 			if(b<smoothing_order){b_lower=smoothing_order-b;}
 			if(c<smoothing_order){c_lower=smoothing_order-c;}
@@ -773,8 +776,8 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb))*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb));
+						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
 					}
 				}
 			}
@@ -793,9 +796,6 @@ int main()
 			int a_upper=0;
 			int b_upper=0;
 			int c_upper=0;
-			double ha=1.0+exp(std::abs(bestfit_ns-static_cast<double>(a)));
-			double hb=1.0+exp(static_cast<double>(b));
-			double hc=1.0+exp(std::abs(bestfit_As-static_cast<double>(c)));
 			if(a<smoothing_order){a_lower=smoothing_order-a;}
 			if(b<smoothing_order){b_lower=smoothing_order-b;}
 			if(c<smoothing_order){c_lower=smoothing_order-c;}
@@ -807,8 +807,8 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb))*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=sqrt(exp(-pow(a-aa,2.00)/ha)+exp(-pow(c-cc,2.00)/hc)+exp(-pow(b-bb,2.00)/hb));
+						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
 					}
 				}
 			}
