@@ -337,7 +337,7 @@ int main()
 	double dCM2_fnlmaxlik=0.00;
 	double lamCDM_fnlmaxlik=0.00;
 	double sample_fnlmaxlik=0.00;
-	static const double h=0.8;
+	static const double h=0.01; // tunable bandwidth parameter
 	static const double reducedmaxAs=3.4;
 	static const double reducedminAs=2.8;
 	static const double maxAs=6.91;
@@ -352,6 +352,7 @@ int main()
 	static const double stepsizens=(maxns-minns)/static_cast<double>(gridsize);
 	static const double stepsizer=(maxr-minr)/static_cast<double>(gridsize);
 	static const double stepsizefnl=(maxfnl-minfnl)/static_cast<double>(gridsize);
+	double h1, h2, h3, h4, h5, h6, h7, h8, h9; // inverse bandwidth matrix acts like (ns,As,r)^T X ((h1,h2,h3),(h4,h5,h6),(h7,h8,h9)) X (ns,As,r)
 	double ns_datum,r_datum,weight_datum,As_datum;
 	double a1,a2,a3,a4;
 	double b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13;
@@ -405,6 +406,15 @@ int main()
 		}
 		bestfit_ns=0.9663133;
 		bestfit_As=3.088923;
+		h1=1.0;
+		h2=0.0;
+		h3=0.0;
+		h4=0.0;
+		h5=1.0;
+		h6=0.0;		
+		h7=0.0;
+		h8=0.0;
+		h9=1.0;
 	}
 	
 	if(date==2015){
@@ -425,6 +435,15 @@ int main()
 		}
 		bestfit_ns=0.9679726;
 		bestfit_As=3.089686;
+		h1=3.096;
+		h2=-0.148;
+		h3=-0.095;
+		h4=-0.0148;
+		h5=0.171;
+		h6=0.015;		
+		h7=-0.095;
+		h8=0.015;
+		h9=0.064;
 	}
 	
 	if(date==2013){
@@ -445,6 +464,15 @@ int main()
 		}
 		bestfit_ns=0.9624098;
 		bestfit_As=3.087056;
+		h1=1.0;
+		h2=0.0;
+		h3=0.0;
+		h4=0.0;
+		h5=1.0;
+		h6=0.0;		
+		h7=0.0;
+		h8=0.0;
+		h9=1.0;
 	}
 	
 	if(date!=2013 && date!=2015 && date!=0){
@@ -570,8 +598,10 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
+						double square_terms = (h5*pow(stepsizeAs*static_cast<double>(c-cc),2.00))+(h9*pow(stepsizer*static_cast<double>(b-bb),2.00))+(h1*pow(stepsizens*static_cast<double>(a-aa),2.00));
+						double cross_terms = ((h3+h7)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb)))) + ((h2+h4)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(c-cc))))+ ((h6+h8)*((stepsizens*static_cast<double>(c-cc))*(stepsizens*static_cast<double>(b-bb))));
+						sum_r_ns_As+=std::exp(-(square_terms+cross_terms)/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(square_terms+cross_terms)/h);
 					}
 				}
 			}
@@ -616,8 +646,10 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
+						double square_terms = (h5*pow(stepsizeAs*static_cast<double>(c-cc),2.00))+(h9*pow(stepsizer*static_cast<double>(b-bb),2.00))+(h1*pow(stepsizens*static_cast<double>(a-aa),2.00));
+						double cross_terms = ((h3+h7)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb)))) + ((h2+h4)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(c-cc))))+ ((h6+h8)*((stepsizens*static_cast<double>(c-cc))*(stepsizens*static_cast<double>(b-bb))));
+						sum_r_ns_As+=std::exp(-(square_terms+cross_terms)/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(square_terms+cross_terms)/h);
 					}
 				}
 			}
@@ -662,8 +694,10 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
+						double square_terms = (h5*pow(stepsizeAs*static_cast<double>(c-cc),2.00))+(h9*pow(stepsizer*static_cast<double>(b-bb),2.00))+(h1*pow(stepsizens*static_cast<double>(a-aa),2.00));
+						double cross_terms = ((h3+h7)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb)))) + ((h2+h4)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(c-cc))))+ ((h6+h8)*((stepsizens*static_cast<double>(c-cc))*(stepsizens*static_cast<double>(b-bb))));
+						sum_r_ns_As+=std::exp(-(square_terms+cross_terms)/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(square_terms+cross_terms)/h);
 					}
 				}
 			}
@@ -708,8 +742,10 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
+						double square_terms = (h5*pow(stepsizeAs*static_cast<double>(c-cc),2.00))+(h9*pow(stepsizer*static_cast<double>(b-bb),2.00))+(h1*pow(stepsizens*static_cast<double>(a-aa),2.00));
+						double cross_terms = ((h3+h7)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb)))) + ((h2+h4)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(c-cc))))+ ((h6+h8)*((stepsizens*static_cast<double>(c-cc))*(stepsizens*static_cast<double>(b-bb))));
+						sum_r_ns_As+=std::exp(-(square_terms+cross_terms)/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(square_terms+cross_terms)/h);
 					}
 				}
 			}
@@ -745,8 +781,10 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
+						double square_terms = (h5*pow(stepsizeAs*static_cast<double>(c-cc),2.00))+(h9*pow(stepsizer*static_cast<double>(b-bb),2.00))+(h1*pow(stepsizens*static_cast<double>(a-aa),2.00));
+						double cross_terms = ((h3+h7)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb)))) + ((h2+h4)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(c-cc))))+ ((h6+h8)*((stepsizens*static_cast<double>(c-cc))*(stepsizens*static_cast<double>(b-bb))));
+						sum_r_ns_As+=std::exp(-(square_terms+cross_terms)/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(square_terms+cross_terms)/h);
 					}
 				}
 			}
@@ -776,8 +814,10 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
+						double square_terms = (h5*pow(stepsizeAs*static_cast<double>(c-cc),2.00))+(h9*pow(stepsizer*static_cast<double>(b-bb),2.00))+(h1*pow(stepsizens*static_cast<double>(a-aa),2.00));
+						double cross_terms = ((h3+h7)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb)))) + ((h2+h4)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(c-cc))))+ ((h6+h8)*((stepsizens*static_cast<double>(c-cc))*(stepsizens*static_cast<double>(b-bb))));
+						sum_r_ns_As+=std::exp(-(square_terms+cross_terms)/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(square_terms+cross_terms)/h);
 					}
 				}
 			}
@@ -807,8 +847,10 @@ int main()
 			for(int aa=-smoothing_order+a_lower;aa<smoothing_order+1+a_upper;aa++){
 				for(int bb=-smoothing_order+b_lower;bb<smoothing_order+1+b_upper;bb++){
 					for(int cc=-smoothing_order+c_lower;cc<smoothing_order+1+c_upper;cc++){
-						sum_r_ns_As+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h)*r_ns_As_count[b+bb][a+aa][c+cc];
-						tot+=std::exp(-(pow(stepsizeAs*static_cast<double>(c-cc),2.00)+pow(stepsizer*static_cast<double>(b-bb),2.00)+pow(stepsizens*static_cast<double>(a-aa),2.00)+((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb))))/h);
+						double square_terms = (h5*pow(stepsizeAs*static_cast<double>(c-cc),2.00))+(h9*pow(stepsizer*static_cast<double>(b-bb),2.00))+(h1*pow(stepsizens*static_cast<double>(a-aa),2.00));
+						double cross_terms = ((h3+h7)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(b-bb)))) + ((h2+h4)*((stepsizens*static_cast<double>(a-aa))*(stepsizens*static_cast<double>(c-cc))))+ ((h6+h8)*((stepsizens*static_cast<double>(c-cc))*(stepsizens*static_cast<double>(b-bb))));
+						sum_r_ns_As+=std::exp(-(square_terms+cross_terms)/h)*r_ns_As_count[b+bb][a+aa][c+cc];
+						tot+=std::exp(-(square_terms+cross_terms)/h);
 					}
 				}
 			}
